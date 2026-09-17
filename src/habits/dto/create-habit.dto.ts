@@ -9,7 +9,7 @@ import {
   IsString,
   Min,
 } from 'class-validator';
-import { Frecuencia } from '../schemas/habit.schema';
+import { Frecuencia, Categoria } from '../schemas/habit.schema';
 
 export class CreateHabitDto {
   @IsNotEmpty({ message: 'El nombre del hábito es obligatorio' })
@@ -21,8 +21,10 @@ export class CreateHabitDto {
   descripcion?: string;
 
   @IsOptional()
-  @IsString()
-  categoria?: string;
+  @IsEnum(Categoria, {
+    message: 'La categoría debe ser Salud, Bienestar, Educación o Productividad',
+  })
+  categoria?: Categoria;
 
   @IsEnum(Frecuencia, { message: 'La frecuencia debe ser diario, semanal o personalizada' })
   frecuencia: Frecuencia;

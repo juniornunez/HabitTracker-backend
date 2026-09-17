@@ -9,6 +9,13 @@ export enum Frecuencia {
   PERSONALIZADA = 'personalizada',
 }
 
+export enum Categoria {
+  SALUD = 'Salud',
+  BIENESTAR = 'Bienestar',
+  EDUCACION = 'Educación',
+  PRODUCTIVIDAD = 'Productividad',
+}
+
 @Schema({ timestamps: true })
 export class Habit {
   @Prop({ required: true })
@@ -17,8 +24,8 @@ export class Habit {
   @Prop()
   descripcion?: string;
 
-  @Prop()
-  categoria?: string;
+  @Prop({ type: String, enum: Categoria })
+  categoria?: Categoria;
 
   @Prop({ type: String, enum: Frecuencia, default: Frecuencia.DIARIO })
   frecuencia: Frecuencia;
