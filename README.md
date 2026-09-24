@@ -1,114 +1,98 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Habit Tracker — Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+API REST para el sistema de gestión de hábitos y metas personales **Habit Tracker**, desarrollada con NestJS y MongoDB.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Tecnologías utilizadas
 
-## Description
+- **NestJS** (Node.js + TypeScript) — framework del backend
+- **MongoDB** con **Mongoose** — base de datos y modelado de esquemas
+- **Passport + JWT** — autenticación
+- **bcrypt** — hash de contraseñas con sal
+- **class-validator / class-transformer** — validación de DTOs
+- **pnpm** — gestor de paquetes
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Arquitectura
 
-## Project setup
+La API está organizada en módulos, siguiendo la arquitectura modular de NestJS:
 
-```bash
-$ pnpm install
+```
+src/
+├── auth/          Registro, login, JWT, guards
+├── users/          Perfil del usuario autenticado
+├── habits/         CRUD de hábitos
+├── records/         Seguimiento diario/semanal de cumplimiento y rachas
+├── statistics/      Agregación de estadísticas y datos para gráficas
+├── common/           Utilidades compartidas (fecha en zona horaria de
+│                    Honduras, cálculo de rachas y % de cumplimiento)
+├── app.module.ts
+└── main.ts
 ```
 
-## Compile and run the project
+Cada módulo tiene su propio `controller` (rutas), `service` (lógica de negocio) y, cuando aplica, sus `dto` (validación) y `schemas` (modelos de Mongoose).
+
+### Modelo de datos
+
+- **User**: nombre, correo, contraseña (hasheada)
+- **Habit**: nombre, descripción, categoría, frecuencia (diario/semanal/personalizada), días personalizados, prioridad, fecha de inicio/fin, activo, usuario (relación)
+- **HabitRecord**: hábito (relación), usuario (relación), fecha, completado
+
+### Autenticación
+
+JWT stateless. El token se firma al hacer login/registro y se valida en cada petición protegida mediante `JwtAuthGuard`. Las contraseñas se guardan con `bcrypt` (sal generada explícitamente antes de hashear).
+
+## Instalación y ejecución local
+
+### 1. Requisitos previos
+
+- Node.js 18+
+- pnpm
+- MongoDB corriendo (local, Docker, o Atlas)
+
+### 2. Instalar dependencias
 
 ```bash
-# development
-$ pnpm run start
-
-# watch mode
-$ pnpm run start:dev
-
-# production mode
-$ pnpm run start:prod
+pnpm install
 ```
 
-## Run tests
+### 3. Configurar variables de entorno
+
+Creá un archivo `.env` en la raíz del proyecto con:
+
+```
+PORT=3001
+MONGODB_URI=mongodb://usuario:contraseña@localhost:27017/habitsdb?authSource=admin
+JWT_SECRET=una_cadena_secreta_larga_y_dificil_de_adivinar
+JWT_EXPIRES_IN=7d
+```
+
+Ajustá `MONGODB_URI` según cómo tengas tu MongoDB (con o sin autenticación).
+
+### 4. Levantar el servidor
 
 ```bash
-# unit tests
-$ pnpm run test
-
-# e2e tests
-$ pnpm run test:e2e
-
-# test coverage
-$ pnpm run test:cov
+pnpm run start:dev
 ```
 
-## Deployment
+El backend queda disponible en `http://localhost:3001`.
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## Endpoints principales
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+| Módulo     | Endpoint               | Método         | Descripción                        |
+| ---------- | ---------------------- | -------------- | ---------------------------------- |
+| Auth       | `/auth/register`       | POST           | Registrar un nuevo usuario         |
+| Auth       | `/auth/login`          | POST           | Iniciar sesión y obtener JWT       |
+| Users      | `/users/me`            | GET            | Perfil del usuario autenticado     |
+| Habits     | `/habits`              | GET / POST     | Listar / crear hábitos             |
+| Habits     | `/habits/:id`          | PATCH / DELETE | Editar / eliminar un hábito        |
+| Records    | `/habits/:id/complete` | POST / DELETE  | Marcar / desmarcar cumplimiento    |
+| Records    | `/habits/:id/history`  | GET            | Historial de un hábito             |
+| Records    | `/habits/:id/streak`   | GET            | Racha actual y mejor racha         |
+| Statistics | `/statistics`          | GET            | Estadísticas agregadas del usuario |
 
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
-```
+Todos los endpoints (excepto `auth/register` y `auth/login`) requieren el header `Authorization: Bearer <token>`.
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Notas de diseño
 
-## Observability
-
-In production applications, observability is essential for understanding how your system behaves, detecting issues early, and maintaining reliable performance.
-
-[NestJS Observe](https://observe.nestjs.com) automatically instruments your NestJS application, giving you deep visibility into your system with minimal setup:
-
-- **Distributed tracing:** Follow requests across services and understand how they flow through your system.
-- **Waterfall analysis:** Visualize request execution and identify slow operations, bottlenecks, and unexpected delays.
-- **Performance analysis:** Analyze application performance in real time and quickly pinpoint areas that need optimization.
-- **Metrics:** Track key application and infrastructure metrics to understand system health and performance trends.
-- **Logging:** Centralize and correlate logs with traces and other telemetry to make debugging easier.
-- **Error tracking:** Detect errors quickly and investigate their root causes with the surrounding context.
-- **SLA monitoring:** Track service-level objectives and identify when your application is approaching or exceeding defined thresholds.
-- **Alarms and alerts:** Set up alerts for critical errors, performance degradation, SLA violations, and other anomalies so your team can react quickly.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Auto-instrument your application with [NestJS Observer](https://observer.nestjs.com). Distributed tracing, metrics, and logging made easy. Error tracking and performance monitoring for your NestJS applications.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+- Todas las fechas relevantes para "qué día es hoy" se calculan explícitamente en la zona horaria de Honduras (`America/Tegucigalpa`), sin depender de la configuración del servidor.
+- Los hábitos semanales se consideran "cumplidos" para toda la semana (lunes a domingo) una vez marcados un solo día; el reinicio ocurre el lunes.
+- Al eliminar un hábito, sus registros de cumplimiento asociados se eliminan en cascada.
