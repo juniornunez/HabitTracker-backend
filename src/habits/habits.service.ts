@@ -5,11 +5,13 @@ import { Habit, HabitDocument } from './schemas/habit.schema';
 import { CreateHabitDto } from './dto/create-habit.dto';
 import { UpdateHabitDto } from './dto/update-habit.dto';
 import { getHondurasDateString } from '../common/honduras-date.util';
+import { HabitRecord, RecordDocument } from '../records/schemas/habit-record.schema';
 
 @Injectable()
 export class HabitsService {
   constructor(
     @InjectModel(Habit.name) private habitModel: Model<HabitDocument>,
+    @InjectModel(HabitRecord.name) private recordModel: Model<RecordDocument>,
   ) {}
 
   /**
@@ -89,5 +91,9 @@ export class HabitsService {
     if (result.deletedCount === 0) {
       throw new NotFoundException('Hábito no encontrado');
     }
+
+    await this.recordModel
+      .deleteMany({ habito: new Types.ObjectId(habitId), usuario: new Types.ObjectId(userId) })
+      .exec();
   }
 }

@@ -15,6 +15,8 @@ function toUtcMidnightFromDateOnly(dateStr: string): Date {
   return new Date(`${dateStr.slice(0, 10)}T00:00:00.000Z`);
 }
 
+const DIAS_CORTOS = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
+
 @Injectable()
 export class StatisticsService {
   constructor(
@@ -67,6 +69,7 @@ export class StatisticsService {
       );
       const { rachaActual, mejorRacha } = getHabitStreak(habit, habitRecords, today);
       return {
+        habitId: habit._id.toString(),
         nombre: habit.nombre,
         categoria: habit.categoria || 'Sin categoría',
         rachaActual,
@@ -78,6 +81,28 @@ export class StatisticsService {
       (max, h) => Math.max(max, h.rachaActual),
       0,
     );
+
+    const mejorRachaGlobal = rachasPorHabito.reduce(
+      (max, h) => Math.max(max, h.mejorRacha),
+      0,
+    );
+
+    // Hábitos distintos completados exactamente HOY (no "esta semana").
+    const completadosHoy = new Set(
+      allRecords
+        .filter((r) => utcMidnight(new Date(r.fecha)).getTime() === today.getTime())
+        .map((r) => r.habito.toString()),
+    ).size;
+
+    // Progreso semanal: total de hábitos completados por día, últimos 7 días.
+    const progresoSemanal: { dia: string; total: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+      const day = new Date(today.getTime() - i * 86400000);
+      const total = allRecords.filter(
+        (r) => utcMidnight(new Date(r.fecha)).getTime() === day.getTime(),
+      ).length;
+      progresoSemanal.push({ dia: DIAS_CORTOS[day.getUTCDay()], total });
+    }
 
     const now = new Date();
     const progresoMensual: { mes: string; total: number }[] = [];
@@ -129,6 +154,9 @@ export class StatisticsService {
       habitosActivos,
       habitosFinalizados,
       diasConsecutivos,
+      mejorRachaGlobal,
+      completadosHoy,
+      progresoSemanal,
       progresoMensual,
       tendenciaCumplimiento: {
         completado: porcentajeGeneral,
